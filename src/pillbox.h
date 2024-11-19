@@ -50,8 +50,25 @@ class Pillbox {
         if (switches[i]->getSwitchState() == NOMAGNET) boxState[i] = OPEN;
         else boxState[i] = CLOSED;
       }
+      checkBoxStateChanged ();
     }
 
+    void checkBoxStateChanged () {
+      for (int i = 0; i < 4; ++i) {
+        if (lastBoxState[i] == CLOSED) {
+          if (boxState[i] == OPEN) handleOpenBox(i);
+          else continue;
+        }
+        else if (lastBoxState[i] == OPEN) {
+          if (boxState[i] == CLOSED) handleCloseBox(i);
+          else handleKeepOpeningBox(i);
+        }
+      }
+    }
+
+    void handleOpenBox(int boxIndex);
+    void handleCloseBox(int boxIndex);
+    void handleKeepOpeningBox(int boxIndex);
 };
 
 #endif // PILLBOX_H
