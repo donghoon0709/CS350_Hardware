@@ -46,10 +46,7 @@ class Pillbox {
     }
 
     void updateBoxState () {
-      for (int i = 0; i < 4; ++i) {
-        if (switches[i]->getSwitchState() == NOMAGNET) boxState[i] = OPEN;
-        else boxState[i] = CLOSED;
-      }
+      
     }
 
 };
