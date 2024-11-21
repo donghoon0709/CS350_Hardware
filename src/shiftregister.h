@@ -67,4 +67,4 @@ class ShiftRegister {
     }
 };
 
-#endif SHIFTREGISTER_H
+#endif // SHIFTREGISTER_H
