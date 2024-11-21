@@ -55,20 +55,46 @@ class Pillbox {
 
     void checkBoxStateChanged () {
       for (int i = 0; i < 4; ++i) {
+        int registerNum = i / 2;
+        int ledNum = i & 2;
+
         if (lastBoxState[i] == CLOSED) {
-          if (boxState[i] == OPEN) handleOpenBox(i);
+          if (boxState[i] == OPEN) handleOpenBox(registerNum, ledNum);
           else continue;
         }
         else if (lastBoxState[i] == OPEN) {
-          if (boxState[i] == CLOSED) handleCloseBox(i);
+          if (boxState[i] == CLOSED) handleCloseBox(registerNum, ledNum);
           else handleKeepOpeningBox(i);
         }
       }
     }
 
-    void handleOpenBox(int boxIndex);
-    void handleCloseBox(int boxIndex);
+    void handleOpenBox(int registerIndex, int ledIndex) {  // close -> open
+      /*
+      if (LED == green), LED 초록 점멸          // 완료 & opening
+      else (LED == red), LED 노란색으로 바꾸기  // 미완료 & opening
+        lastBoxState <- open
+      */
+      LEDColor led = registers[registerIndex]->getLEDcolor(ledIndex);
+      if (led == GREEN) registers[registerIndex]->setLEDColor(ledIndex, BLINK_GREEN);
+      else if (led == RED) {
+        registers[registerIndex]->setLEDColor(ledIndex, YELLOW);
+        lastBoxState[2*registerIndex + ledIndex] = OPEN;
+      }
+    }
+    void handleCloseBox(int registerIndex, int ledIndex){  // open -> close
+      /*
+      1. LED 색 초록색으로 바꾸기
+      2. lastBoxState <- close
+      3. 앱에 복용 완료 알림 보내기
+      */
+      registers[registerIndex]->setLEDColor(ledIndex, BLINK_GREEN);
+      lastBoxState[2*registerIndex + ledIndex] = CLOSED;
+    }
     void handleKeepOpeningBox(int boxIndex);
+      /*
+      1. LED 색 노란색 유지
+      */
 };
 
 #endif // PILLBOX_H

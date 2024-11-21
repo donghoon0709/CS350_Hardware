@@ -33,6 +33,10 @@ class ShiftRegister {
       updateShiftRegister(data);
     }
 
+    LEDColor getLEDcolor(int ledIndex) {
+      return leds[ledIndex].getColor();
+    }
+
     byte getShiftRegisterData () {
       byte result;
 

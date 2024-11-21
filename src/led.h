@@ -4,7 +4,8 @@
 enum LEDColor {
   RED,
   GREEN,
-  YELLOW
+  YELLOW, 
+  BLINK_GREEN
 };
 
 class RGBLED {
