@@ -1,0 +1,8 @@
+#ifndef ARDUINO_SECRETS_H
+#define ARDUINO_SECRETS_H
+
+char SECRET_SSID[] = "YOUR_SSID";
+char SECRET_PW[] = "YOUR_PW";
+
+
+#endif  // ARDUINO_SECRETS_H
