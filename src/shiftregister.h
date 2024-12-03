@@ -26,7 +26,11 @@ class ShiftRegister {
 
     // 특정 LED 색상을 설정 (0~1번 LED)
     void setLEDColor(int ledIndex, LEDColor color) {
-      if (ledIndex < 0 || ledIndex >= 2) return ; // 범위 검사
+      if (ledIndex < 0 || ledIndex >= 2) {
+        Serial.println("Invalid LED index");
+        return ; // 범위 검사
+      }
+
       // LED 색상 설정
       leds[ledIndex].setColor(color);
       byte data = getShiftRegisterData();

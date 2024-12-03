@@ -6,8 +6,8 @@
 #include "switch.h"
 
 enum BoxState {
-  OPEN,
-  CLOSED
+  BOX_OPEN,
+  BOX_CLOSED
 };
 
 class Pillbox {
@@ -17,10 +17,14 @@ class Pillbox {
     BoxState boxState[4];
     BoxState lastBoxState[4];
 
+    bool isTaken[4];
+    Communication& com;
+
   public:
     Pillbox(const ShiftRegisterPins r1pins, \
             const ShiftRegisterPins r2pins, \
-            int s1, int s2, int s3, int s4) {
+            int s1, int s2, int s3, int s4,
+            Communication& com) {
       registers[0] = new ShiftRegister(r1pins);
       registers[1] = new ShiftRegister(r2pins);
 
@@ -29,9 +33,12 @@ class Pillbox {
       switches[2] = new ReedSwitch(s3);
       switches[3] = new ReedSwitch(s4);
 
+      this->com = com;
+
       for (int i = 0; i < 4; ++i) {
-        boxState[i] = CLOSED;
-        lastBoxState[i] = CLOSED;
+        boxState[i] = BOX_CLOSED;
+        lastBoxState[i] = BOX_CLOSED;
+        isTaken[i] = false;
       }
     }
 
@@ -45,26 +52,25 @@ class Pillbox {
       delete switches[3];
     }
 
-     BoxState getBoxState (int idx) {
+    BoxState getBoxState (int idx) {
       return boxState[idx];
     }
 
     void updateBoxState () {
       for (int i = 0; i < 4; ++i) {
-        if (switches[i]->getSwitchState() == NOMAGNET) boxState[i] = OPEN;
-        else boxState[i] = CLOSED;
+        if (switches[i]->getSwitchState() == NOMAGNET) boxState[i] = BOX_OPEN;
+        else boxState[i] = BOX_CLOSED;
       }
-      checkBoxStateChanged ();
     }
 
     void checkBoxStateChanged () {
       for (int i = 0; i < 4; ++i) {
-        if (lastBoxState[i] == CLOSED) {
-          if (boxState[i] == OPEN) handleOpenBox(i);
+        if (lastBoxState[i] == BOX_CLOSED) {
+          if (boxState[i] == BOX_OPEN) handleOpenBox(i);
           else continue;
         }
-        else if (lastBoxState[i] == OPEN) {
-          if (boxState[i] == CLOSED) handleCloseBox(i);
+        else if (lastBoxState[i] == BOX_OPEN) {
+          if (boxState[i] == BOX_CLOSED) handleCloseBox(i);
           else handleKeepOpeningBox(i);
         }
       }
@@ -78,30 +84,33 @@ class Pillbox {
 
       if (current_led == GREEN) {      // green(close)일 때 open => 초록 점멸
         registers[registerIndex]->setLEDBlink(ledIndex, GREEN);
-        lastBoxState[boxIndex] = OPEN;
+        lastBoxState[boxIndex] = BOX_OPEN;
       }
       else if (current_led == RED) {  // red(close)일 때 open => yellow
         registers[registerIndex]->setLEDColor(ledIndex, YELLOW);
-        lastBoxState[boxIndex] = OPEN;
+        lastBoxState[boxIndex] = BOX_OPEN;
       }
+      if (isTaken[boxIndex]) {
+        registers[registerIndex]->setLEDColor(ledIndex, GREEN);
+      }
+      else {
+        registers[registerIndex]->setLEDColor(ledIndex, YELLOW);
+      }
+      lastBoxState[boxIndex] = BOX_OPEN;
     }
     void handleCloseBox(int boxIndex){
       int registerIndex = boxIndex / 2;
       int ledIndex = boxIndex % 2;
 
       registers[registerIndex]->setLEDColor(ledIndex, GREEN);
-      lastBoxState[boxIndex] = CLOSED;
-
-      // 앱에 복용 완료 알림 보내기
+      lastBoxState[boxIndex] = BOX_CLOSED;
     }
-    void handleKeepOpeningBox(int boxIndex){
-      LEDColor current_led = registers[registerIndex]->getLEDcolor(ledIndex);
-      
-      if (current_led == GREEN) {     // green(open)일 때 open => 초록 점멸
-        registers[registerIndex]->setLEDBlink(ledIndex, GREEN);
-      }
-      // yellow일 때 open => continue
+    void handleKeepOpeningBox(int boxIndex) {
+      Serial.println("keep opening");
     }
+      /*
+      1. LED 색 노란색 유지
+      */
 };
 
 #endif // PILLBOX_H
