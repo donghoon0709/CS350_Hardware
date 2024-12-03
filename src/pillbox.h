@@ -45,6 +45,10 @@ class Pillbox {
       delete switches[3];
     }
 
+     BoxState getBoxState (int idx) {
+      return boxState[idx];
+    }
+
     void updateBoxState () {
       for (int i = 0; i < 4; ++i) {
         if (switches[i]->getSwitchState() == NOMAGNET) boxState[i] = OPEN;
@@ -67,38 +71,37 @@ class Pillbox {
     }
 
     void handleOpenBox(int boxIndex) {  // close -> open
-      /*
-      if (LED == green), LED 초록 점멸          // 완료 & opening
-      else (LED == red), LED 노란색으로 바꾸기  // 미완료 & opening
-        lastBoxState <- open
-      */
       int registerIndex = boxIndex / 2;
       int ledIndex = boxIndex % 2;
 
       LEDColor current_led = registers[registerIndex]->getLEDcolor(ledIndex);
 
-      if (current_led == GREEN) registers[registerIndex]->setLEDColor(ledIndex, BLINK_GREEN);
-      else if (current_led == RED) {
+      if (current_led == GREEN) {      // green(close)일 때 open => 초록 점멸
+        registers[registerIndex]->setLEDBlink(ledIndex, GREEN);
+        lastBoxState[boxIndex] = OPEN;
+      }
+      else if (current_led == RED) {  // red(close)일 때 open => yellow
         registers[registerIndex]->setLEDColor(ledIndex, YELLOW);
         lastBoxState[boxIndex] = OPEN;
       }
     }
-    void handleCloseBox(int boxIndex){  // open -> close
-      /*
-      1. LED 색 초록색으로 바꾸기
-      2. lastBoxState <- close
-      3. 앱에 복용 완료 알림 보내기
-      */
+    void handleCloseBox(int boxIndex){
       int registerIndex = boxIndex / 2;
       int ledIndex = boxIndex % 2;
 
-      registers[registerIndex]->setLEDColor(ledIndex, BLINK_GREEN);
+      registers[registerIndex]->setLEDColor(ledIndex, GREEN);
       lastBoxState[boxIndex] = CLOSED;
+
+      // 앱에 복용 완료 알림 보내기
     }
-    void handleKeepOpeningBox(int boxIndex);
-      /*
-      1. LED 색 노란색 유지
-      */
+    void handleKeepOpeningBox(int boxIndex){
+      LEDColor current_led = registers[registerIndex]->getLEDcolor(ledIndex);
+      
+      if (current_led == GREEN) {     // green(open)일 때 open => 초록 점멸
+        registers[registerIndex]->setLEDBlink(ledIndex, GREEN);
+      }
+      // yellow일 때 open => continue
+    }
 };
 
 #endif // PILLBOX_H

@@ -33,6 +33,23 @@ class ShiftRegister {
       updateShiftRegister(data);
     }
 
+    // 특정 LED 2회 점멸
+    void setLEDBlink(int ledIndex, LEDColor color){
+      if (ledIndex < 0 || ledIndex >= 2) return ;
+
+      for (int i =0; i<2; i++){
+        leds[ledIndex].setColor(OFF);
+        byte data = getShiftRegisterData();
+        updateShiftRegister(data);
+        delay(500);
+
+        leds[ledIndex].setColor(color);
+        byte data = getShiftRegisterData();
+        updateShiftRegister(data);
+        delay(500);
+      }
+    }
+
     LEDColor getLEDcolor(int ledIndex) {
       return leds[ledIndex].getColor();
     }
@@ -54,6 +71,8 @@ class ShiftRegister {
           return 0b01000000;
         case YELLOW:
           return 0b11000000;
+        case OFF:
+          return 0b00000000;
       }
     }
  
