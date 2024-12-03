@@ -3,6 +3,7 @@
 
 #include <WiFiNINA.h>
 #include <ArduinoHttpClient.h>
+#include <Arduino_JSON.h>
 #include "pillbox.h"
 #include "led.h"
 
@@ -14,12 +15,12 @@ class Communication {
         int serverPort;
 
         WiFiClient wifiClient;
-        HttpClient httpClient;
+        HttpClient* httpClient;
 
     public:
-        Communication(  const char* ssid,\
-                        const char* password,\
-                        const char* serverAddress,\
+        Communication(  char* ssid,\
+                        char* password,\
+                        char* serverAddress,\
                         int serverPort) {
             this->ssid = ssid;
             this->password = password;
@@ -52,12 +53,12 @@ class Communication {
         void checkServerConnection() {
             Serial.println("2. Checking server connection...");
 
-            httpClient.beginRequest();
-            httpClient.get("/ping"); // 서버의 `/ping` 엔드포인트로 요청
-            httpClient.endRequest();
+            httpClient->beginRequest();
+            httpClient->get("/ping"); // 서버의 `/ping` 엔드포인트로 요청
+            httpClient->endRequest();
 
-            int statusCode = httpClient.responseStatusCode();
-            String response = httpClient.responseBody();
+            int statusCode = httpClient->responseStatusCode();
+            String response = httpClient->responseBody();
 
             if (statusCode == 200 && response == "pong") {
                 Serial.println("Connected to server successfully!");
@@ -67,15 +68,25 @@ class Communication {
                 checkServerConnection(); // 재귀 호출로 재시도
             }
         }
-        void sendStateToServer(String data) {
-            httpClient.beginRequest();
-            httpClient.post("/box-state", "application/json", data);
-            httpClient.endRequest();
+        JSONVar getRequest(char* endpoint) {
+            httpClient->get(endpoint);
 
-            int statusCode = httpClient.responseStatusCode();
-            String response = httpClient.responseBody();
+            int statusCode = httpClient->responseStatusCode();
+            String response = httpClient->responseBody();
+
+            return JSON.parse(response);
+        }
+        JSONVar postRequest(String data, char* endpoint) {
+            httpClient->beginRequest();
+            httpClient->post(endpoint, "application/json", data);
+            httpClient->endRequest();
+
+            int statusCode = httpClient->responseStatusCode();
+            String response = httpClient->responseBody();
             Serial.print("Server Response: ");
             Serial.println(response);
+
+            return JSON.parse(response);
         }
 };
 

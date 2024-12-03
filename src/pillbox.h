@@ -4,6 +4,9 @@
 #include "led.h"
 #include "shiftregister.h"
 #include "switch.h"
+#include "communication.h"
+
+#include <Arduino_JSON.h>
 
 enum BoxState {
   BOX_OPEN,
@@ -18,13 +21,15 @@ class Pillbox {
     BoxState lastBoxState[4];
 
     bool isTaken[4];
-    Communication& com;
+    Communication* com;
+    
+    int openingTimeCount[4];
 
   public:
     Pillbox(const ShiftRegisterPins r1pins, \
             const ShiftRegisterPins r2pins, \
-            int s1, int s2, int s3, int s4,
-            Communication& com) {
+            int s1, int s2, int s3, int s4, \
+            Communication& communication) {
       registers[0] = new ShiftRegister(r1pins);
       registers[1] = new ShiftRegister(r2pins);
 
@@ -33,12 +38,13 @@ class Pillbox {
       switches[2] = new ReedSwitch(s3);
       switches[3] = new ReedSwitch(s4);
 
-      this->com = com;
+      this->com = &communication;
 
       for (int i = 0; i < 4; ++i) {
         boxState[i] = BOX_CLOSED;
         lastBoxState[i] = BOX_CLOSED;
         isTaken[i] = false;
+        openingTimeCount[i] = 0;
       }
     }
 
@@ -56,8 +62,19 @@ class Pillbox {
       return boxState[idx];
     }
 
+    void getStateFromServer() {
+      JSONVar state = com->getRequest("/hardware/change-state");
+
+      for (int i = 0; i < 4; ++i) {
+        String stateStr = state[i]["state"];
+        if (stateStr == "taken") isTaken[i] = true;
+        else isTaken[i] = false;
+      }
+    }
+    
     void updateBoxState () {
       for (int i = 0; i < 4; ++i) {
+        registers[i / 2]->setLEDColor(i % 2, isTaken[i] ? GREEN : RED);
         if (switches[i]->getSwitchState() == NOMAGNET) boxState[i] = BOX_OPEN;
         else boxState[i] = BOX_CLOSED;
       }
@@ -80,37 +97,60 @@ class Pillbox {
       int registerIndex = boxIndex / 2;
       int ledIndex = boxIndex % 2;
 
-      LEDColor current_led = registers[registerIndex]->getLEDcolor(ledIndex);
-
-      if (current_led == GREEN) {      // green(close)일 때 open => 초록 점멸
+      if (isTaken[boxIndex]) {      // 약을 먹은 상태에서 상자를 열 때,
         registers[registerIndex]->setLEDBlink(ledIndex, GREEN);
-        lastBoxState[boxIndex] = BOX_OPEN;
       }
-      else if (current_led == RED) {  // red(close)일 때 open => yellow
-        registers[registerIndex]->setLEDColor(ledIndex, YELLOW);
-        lastBoxState[boxIndex] = BOX_OPEN;
-      }
-      if (isTaken[boxIndex]) {
-        registers[registerIndex]->setLEDColor(ledIndex, GREEN);
-      }
-      else {
+      else {  // 약을 먹지 않은 상태에서 상자를 열 때,
         registers[registerIndex]->setLEDColor(ledIndex, YELLOW);
       }
       lastBoxState[boxIndex] = BOX_OPEN;
     }
+
     void handleCloseBox(int boxIndex){
       int registerIndex = boxIndex / 2;
       int ledIndex = boxIndex % 2;
 
       registers[registerIndex]->setLEDColor(ledIndex, GREEN);
       lastBoxState[boxIndex] = BOX_CLOSED;
+
+      isTaken[boxIndex] = true;
+      openingTimeCount[boxIndex] = 0;
+
+      sendNewIntakeToServer();
     }
+    
     void handleKeepOpeningBox(int boxIndex) {
-      Serial.println("keep opening");
+      int registerIndex = boxIndex / 2;
+      int ledIndex = boxIndex % 2;
+
+      openingTimeCount[boxIndex]++;
+      if (openingTimeCount[boxIndex] > 50) {
+        registers[registerIndex]->setLEDBlink(ledIndex, YELLOW);
+
+        sendKeepOpeningStateToServer();
+      }
     }
-      /*
-      1. LED 색 노란색 유지
-      */
+
+    void sendNewIntakeToServer() {
+      String jsonData = "{\"isTaken\": [";
+      for (int i = 0; i < 4; i++) {
+        jsonData += isTaken[i] ? "true" : "false";
+        if (i < 3) jsonData += ",";
+      }
+      jsonData += "]}";
+
+      com->postRequest(jsonData, "/hardware/new-intake");
+    }
+    void sendKeepOpeningStateToServer() {
+      String jsonData = "{\"isTaken\": [";
+      for (int i = 0; i < 4; i++) {
+        jsonData += openingTimeCount[i] > 50 ? "true" : "false";
+        if (i < 3) jsonData += ",";
+      }
+      jsonData += "]}";
+
+      com->postRequest(jsonData, "/hardware/keep-opening");
+    }
 };
 
 #endif // PILLBOX_H

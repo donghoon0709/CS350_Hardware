@@ -41,14 +41,14 @@ class ShiftRegister {
     void setLEDBlink(int ledIndex, LEDColor color){
       if (ledIndex < 0 || ledIndex >= 2) return ;
 
-      for (int i =0; i<2; i++){
+      for (int i = 0; i < 2; i++){
         leds[ledIndex].setColor(OFF);
         byte data = getShiftRegisterData();
         updateShiftRegister(data);
         delay(500);
 
         leds[ledIndex].setColor(color);
-        byte data = getShiftRegisterData();
+        data = getShiftRegisterData();
         updateShiftRegister(data);
         delay(500);
       }
@@ -64,7 +64,7 @@ class ShiftRegister {
       result |= colorToByte(leds[0].getColor());
       result |= (colorToByte(leds[1].getColor()) >> 3);
 
-      return result;
+      return (result >> 2);
     }
 
     byte colorToByte (const LEDColor color) {
