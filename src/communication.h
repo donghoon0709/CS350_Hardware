@@ -28,10 +28,6 @@ class Communication {
             this->serverPort = serverPort;
 
             httpClient = new HttpClient(wifiClient, serverAddress, serverPort);
-            
-            checkSerialCommunication();
-            checkWiFiConnection();
-            checkServerConnection();
         }
         ~Communication() {
             delete httpClient;
@@ -39,6 +35,7 @@ class Communication {
         void checkSerialCommunication() {
             Serial.begin(9600);
             while (!Serial);
+            Serial.println("Serial Communication Activated");
         }
 
         void checkWiFiConnection() {

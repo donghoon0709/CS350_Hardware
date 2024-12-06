@@ -10,7 +10,8 @@
 
 enum BoxState {
   BOX_OPEN,
-  BOX_CLOSED
+  BOX_CLOSED,
+  BOX_EMPTY
 };
 
 class Pillbox {
@@ -60,31 +61,45 @@ class Pillbox {
 
       delete com;
     }
-
+    void initPillbox(void) {
+      com->checkSerialCommunication();
+      com->checkWiFiConnection();
+      com->checkServerConnection();
+    }
+ 
     BoxState getBoxState (int idx) {
       return boxState[idx];
     }
 
     void getStateFromServer() {
-      JSONVar state = com->getRequest("/hardware/change-state");
+      JSONVar state = com->getRequest("/api/hardware/change-state");
 
       for (int i = 0; i < 4; ++i) {
-        String stateStr = state[i]["state"];
-        if (stateStr == "taken") isTaken[i] = true;
-        else isTaken[i] = false;
+        String stateStr = state["state"][i];
+        Serial.println(stateStr);
+        if (stateStr.equals("red") || stateStr.equals("empty")) isTaken[i] = false;
+        else isTaken[i] = true;
       }
+      Serial.println("");
+      
     }
     
     void updateBoxState () {
+      Serial.print("Current boxState: ");
       for (int i = 0; i < 4; ++i) {
+        if (i != 2) continue;
         registers[i / 2]->setLEDColor(i % 2, isTaken[i] ? GREEN : RED);
         if (switches[i]->getSwitchState() == NOMAGNET) boxState[i] = BOX_OPEN;
         else boxState[i] = BOX_CLOSED;
+        Serial.print(boxState[i]);
       }
+      Serial.println("");
     }
 
     void checkBoxStateChanged () {
+      
       for (int i = 0; i < 4; ++i) {
+        if (i != 2) continue;
         if (lastBoxState[i] == BOX_CLOSED) {
           if (boxState[i] == BOX_OPEN) handleOpenBox(i);
           else continue;
@@ -119,7 +134,7 @@ class Pillbox {
       isTaken[boxIndex] = true;
       openingTimeCount[boxIndex] = 0;
 
-      sendNewIntakeToServer();
+      sendNewIntakeToServer(boxIndex + 1, "green");
     }
     
     void handleKeepOpeningBox(int boxIndex) {
@@ -127,22 +142,17 @@ class Pillbox {
       int ledIndex = boxIndex % 2;
 
       openingTimeCount[boxIndex]++;
-      if (openingTimeCount[boxIndex] > 50) {
+      if (openingTimeCount[boxIndex] > 5) {
         registers[registerIndex]->setLEDBlink(ledIndex, YELLOW);
 
         sendKeepOpeningStateToServer();
       }
     }
 
-    void sendNewIntakeToServer() {
-      String jsonData = "{\"isTaken\": [";
-      for (int i = 0; i < 4; i++) {
-        jsonData += isTaken[i] ? "true" : "false";
-        if (i < 3) jsonData += ",";
-      }
-      jsonData += "]}";
-
-      com->postRequest(jsonData, "/hardware/new-intake");
+    void sendNewIntakeToServer(int index, String newStatus) {
+      String jsonData = "{\"pillboxIndex\": " + String(index) + 
+                    ", \"newStatus\": \"" + newStatus + "\"}";
+      com->postRequest(jsonData, "/api/hardware/update");
     }
     void sendKeepOpeningStateToServer() {
       String jsonData = "{\"isTaken\": [";
@@ -152,7 +162,7 @@ class Pillbox {
       }
       jsonData += "]}";
 
-      com->postRequest(jsonData, "/hardware/keep-opening");
+      com->postRequest("{\"message\": \"warning\"}" , "/api/notifications");
     }
 };
 

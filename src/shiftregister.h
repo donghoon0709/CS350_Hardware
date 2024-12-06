@@ -45,12 +45,12 @@ class ShiftRegister {
         leds[ledIndex].setColor(OFF);
         byte data = getShiftRegisterData();
         updateShiftRegister(data);
-        delay(500);
+        delay(50);
 
         leds[ledIndex].setColor(color);
         data = getShiftRegisterData();
         updateShiftRegister(data);
-        delay(500);
+        delay(50);
       }
     }
 
@@ -64,7 +64,7 @@ class ShiftRegister {
       result |= colorToByte(leds[0].getColor());
       result |= (colorToByte(leds[1].getColor()) >> 3);
 
-      return (result >> 2);
+      return (result << 2);
     }
 
     byte colorToByte (const LEDColor color) {
