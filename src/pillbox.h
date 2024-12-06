@@ -30,7 +30,7 @@ class Pillbox {
             const ShiftRegisterPins r2pins, \
             int s1, int s2, int s3, int s4, \
             char* ssid, char* password,     \
-            char* serverAddress, char* serverPort) {
+            char* serverAddress, int serverPort) {
       registers[0] = new ShiftRegister(r1pins);
       registers[1] = new ShiftRegister(r2pins);
 
@@ -57,6 +57,8 @@ class Pillbox {
       delete switches[1];
       delete switches[2];
       delete switches[3];
+
+      delete com;
     }
 
     BoxState getBoxState (int idx) {

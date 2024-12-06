@@ -28,6 +28,7 @@ class Communication {
             this->serverPort = serverPort;
 
             httpClient = new HttpClient(wifiClient, serverAddress, serverPort);
+            
             checkSerialCommunication();
             checkWiFiConnection();
             checkServerConnection();
