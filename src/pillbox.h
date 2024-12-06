@@ -29,7 +29,8 @@ class Pillbox {
     Pillbox(const ShiftRegisterPins r1pins, \
             const ShiftRegisterPins r2pins, \
             int s1, int s2, int s3, int s4, \
-            Communication& communication) {
+            char* ssid, char* password,     \
+            char* serverAddress, char* serverPort) {
       registers[0] = new ShiftRegister(r1pins);
       registers[1] = new ShiftRegister(r2pins);
 
@@ -38,7 +39,7 @@ class Pillbox {
       switches[2] = new ReedSwitch(s3);
       switches[3] = new ReedSwitch(s4);
 
-      this->com = &communication;
+      com = new Communication(ssid, password, serverAddress, serverPort);
 
       for (int i = 0; i < 4; ++i) {
         boxState[i] = BOX_CLOSED;

@@ -17,8 +17,8 @@ const int serverPort = 3000;
 WiFiClient wifiClient;
 HttpClient httpClient(wifiClient, serverAddress, serverPort);
 
-Communication com(ssid, password, serverAddress, serverPort);
-Pillbox pillbox({3, 4, 5}, {6, 7, 8}, 9, 10, 11, 12, com);
+Pillbox pillbox({3, 4, 5}, {6, 7, 8}, 9, 10, 11, 12, \
+                ssid, password, serverAddress, serverPort);
 
 void setup() {
 }
