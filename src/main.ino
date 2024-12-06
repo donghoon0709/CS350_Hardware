@@ -26,7 +26,7 @@ void loop() {
   pillbox.getStateFromServer();
   pillbox.updateBoxState();
   pillbox.checkBoxStateChanged();
-  pillbox.sendNewIntakeToServer(1, "green");
+  // pillbox.sendNewIntakeToServer(1, "green");
 
   delay(1000); // 디바운싱 대기
 }

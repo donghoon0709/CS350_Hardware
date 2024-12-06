@@ -43,8 +43,8 @@ class Pillbox {
       com = new Communication(ssid, password, serverAddress, serverPort);
 
       for (int i = 0; i < 4; ++i) {
-        boxState[i] = BOX_CLOSED;
-        lastBoxState[i] = BOX_CLOSED;
+        boxState[i] = BOX_EMPTY;
+        lastBoxState[i] = BOX_EMPTY;
         isTaken[i] = false;
         openingTimeCount[i] = 0;
       }
@@ -76,24 +76,30 @@ class Pillbox {
 
       for (int i = 0; i < 4; ++i) {
         String stateStr = state["state"][i];
-        Serial.println(stateStr);
-        if (stateStr.equals("red") || stateStr.equals("empty")) isTaken[i] = false;
-        else isTaken[i] = true;
+
+        if (stateStr.equals("empty")) continue;
+        if (stateStr.equals("red")){
+          if (lastBoxState[i] == BOX_EMPTY) boxState[i] = BOX_CLOSED; // 비어있는 상자에 새로운 약 할당
+          isTaken[i] = false;
+        }
+        else boxState[i] = BOX_OPEN;
+        
       }
       Serial.println("");
       
     }
     
     void updateBoxState () {
-      Serial.print("Current boxState: ");
       for (int i = 0; i < 4; ++i) {
-        if (i != 2) continue;
-        registers[i / 2]->setLEDColor(i % 2, isTaken[i] ? GREEN : RED);
+        int registerIndex = i / 2;
+        int ledIndex = i % 2;
+
+        registers[registerIndex]->setLEDColor(ledIndex, isTaken[i] ? GREEN : RED);
+
         if (switches[i]->getSwitchState() == NOMAGNET) boxState[i] = BOX_OPEN;
         else boxState[i] = BOX_CLOSED;
         Serial.print(boxState[i]);
       }
-      Serial.println("");
     }
 
     void checkBoxStateChanged () {
@@ -134,7 +140,7 @@ class Pillbox {
       isTaken[boxIndex] = true;
       openingTimeCount[boxIndex] = 0;
 
-      sendNewIntakeToServer(boxIndex + 1, "green");
+      sendNewIntakeToServer(boxIndex, "green");
     }
     
     void handleKeepOpeningBox(int boxIndex) {
@@ -147,13 +153,15 @@ class Pillbox {
 
         sendKeepOpeningStateToServer();
       }
+      lastBoxState[boxIndex] = BOX_OPEN;
     }
 
     void sendNewIntakeToServer(int index, String newStatus) {
-      String jsonData = "{\"pillboxIndex\": " + String(index) + 
+      String jsonData = "{\"pillboxIndex\": " + String(index+1) + 
                     ", \"newStatus\": \"" + newStatus + "\"}";
       com->postRequest(jsonData, "/api/hardware/update");
     }
+
     void sendKeepOpeningStateToServer() {
       String jsonData = "{\"isTaken\": [";
       for (int i = 0; i < 4; i++) {
@@ -161,7 +169,7 @@ class Pillbox {
         if (i < 3) jsonData += ",";
       }
       jsonData += "]}";
-
+      String warningMessage = "{\"message\": \"Warning: Pillbox #" + String(index+1) + "is OPEN" +"\"}"
       com->postRequest("{\"message\": \"warning\"}" , "/api/notifications");
     }
 };

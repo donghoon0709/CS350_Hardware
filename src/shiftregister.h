@@ -59,10 +59,10 @@ class ShiftRegister {
     }
 
     byte getShiftRegisterData () {
-      byte result;
+      byte result = 0;
 
       result |= colorToByte(leds[0].getColor());
-      result |= (colorToByte(leds[1].getColor()) >> 3);
+      result |= (colorToByte(leds[1].getColor()) << 3);
 
       return (result << 2);
     }
@@ -70,11 +70,11 @@ class ShiftRegister {
     byte colorToByte (const LEDColor color) {
       switch (color) {
         case RED:
-          return 0b10000000;
+          return 0b00000001;
         case GREEN:
-          return 0b01000000;
+          return 0b00000010;
         case YELLOW:
-          return 0b11000000;
+          return 0b00000011;
         case OFF:
           return 0b00000000;
       }
