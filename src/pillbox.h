@@ -80,7 +80,7 @@ class Pillbox {
         if (stateStr.equals("empty")) continue;
         if (stateStr.equals("red")){
           if (lastBoxState[i] == BOX_EMPTY) {
-            if (switches[boxIndex]->getSwitchState() == NOMAGNET) openingTimeCount[i] = 1;  // 뚜껑 열려있을 때만 등록 가능하도록
+            if (switches[boxIndex]->getSwitchState() == NOMAGNET) openingTimeCount[i] = 1;  // 앱 등록 후, 뚜껑 한번 열고 닫아야 등록됨
             else if (openingTimeCount[i] == 1) registerPill(i);
             else continue;
           }
