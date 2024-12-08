@@ -79,10 +79,15 @@ class Pillbox {
 
         if (stateStr.equals("empty")) continue;
         if (stateStr.equals("red")){
-          if (lastBoxState[i] == BOX_EMPTY) boxState[i] = BOX_CLOSED; // 비어있는 상자에 새로운 약 할당
-          isTaken[i] = false;
+          if (lastBoxState[i] == BOX_EMPTY) {
+            if (switches[boxIndex]->getSwitchState() == NOMAGNET) openingTimeCount[i] = 1;  // 뚜껑 열려있을 때만 등록 가능하도록
+            else if (openingTimeCount[i] == 1) registerPill(i);
+            else continue;
+          }
+          else isTaken[i] = false;
         }
-        else boxState[i] = BOX_OPEN;
+        if (stateStr.equals("complete")) completeMedication(i);
+        else isTaken[i] = true;
         
       }
       Serial.println("");
@@ -96,6 +101,7 @@ class Pillbox {
 
         registers[registerIndex]->setLEDColor(ledIndex, isTaken[i] ? GREEN : RED);
 
+        if (boxState[i] == BOX_EMPTY) continue;
         if (switches[i]->getSwitchState() == NOMAGNET) boxState[i] = BOX_OPEN;
         else boxState[i] = BOX_CLOSED;
         Serial.print(boxState[i]);
@@ -105,7 +111,7 @@ class Pillbox {
     void checkBoxStateChanged () {
       
       for (int i = 0; i < 4; ++i) {
-        if (i != 2) continue;
+        if (boxState[i] == BOX_EMPTY) continue;
         if (lastBoxState[i] == BOX_CLOSED) {
           if (boxState[i] == BOX_OPEN) handleOpenBox(i);
           else continue;
@@ -172,6 +178,24 @@ class Pillbox {
       String warningMessage = "{\"message\": \"Warning: Pillbox #" + String(index+1) + "is OPEN" +"\"}"
       com->postRequest("{\"message\": \"warning\"}" , "/api/notifications");
     }
+
+   void registerPill(int boxIndex) {
+        boxState[boxIndex] = BOX_CLOSED;
+        lastBoxState[boxIndex] = BOX_CLOSED;
+        isTaken[boxIndex] = false;
+        openingTimeCount[boxIndex] = 0;
+   }
+
+   void completeMedication(int boxIndex) {
+        int registerIndex = boxIndex / 2;
+        int ledIndex = boxIndex % 2;
+
+        registers[registerIndex]->setLEDColor(ledIndex, OFF);
+        boxState[boxIndex] = BOX_EMPTY;
+        lastBoxState[boxIndex] = BOX_EMPTY;
+        isTaken[boxIndex] = false;
+        openingTimeCount[boxIndex] = 0;
+   }
 };
 
 #endif // PILLBOX_H
