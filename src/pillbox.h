@@ -24,7 +24,7 @@ class Pillbox {
     bool isTaken[4];
     Communication* com;
     
-    int openingTimeCount[4];
+    int openingTimeCount[4]; // 열려 있는 시간 세는 배열
 
   public:
     Pillbox(const ShiftRegisterPins r1pins, \
@@ -78,7 +78,7 @@ class Pillbox {
         String stateStr = state["state"][i];
 
         if (stateStr.equals("empty")) continue;
-        if (stateStr.equals("red")){
+        else if (stateStr.equals("red")){
           if (lastBoxState[i] == BOX_EMPTY) {
             if (switches[boxIndex]->getSwitchState() == NOMAGNET) openingTimeCount[i] = 1;  // 앱 등록 후, 뚜껑 한번 열고 닫아야 등록됨
             else if (openingTimeCount[i] == 1) registerPill(i);
@@ -86,8 +86,8 @@ class Pillbox {
           }
           else isTaken[i] = false;
         }
-        if (stateStr.equals("complete")) completeMedication(i);
-        else isTaken[i] = true;
+        else if (stateStr.equals("green")) isTaken[i] = true;
+        else if (stateStr.equals("complete")) completeMedication(i);
         
       }
       Serial.println("");
@@ -165,7 +165,7 @@ class Pillbox {
     void sendNewIntakeToServer(int index, String newStatus) {
       String jsonData = "{\"pillboxIndex\": " + String(index+1) + 
                     ", \"newStatus\": \"" + newStatus + "\"}";
-      com->postRequest(jsonData, "/api/hardware/update");
+      com->postRequest(jsonData, "/api/hardware/new-intake");
     }
 
     void sendKeepOpeningStateToServer() {
@@ -175,8 +175,9 @@ class Pillbox {
         if (i < 3) jsonData += ",";
       }
       jsonData += "]}";
+
       String warningMessage = "{\"message\": \"Warning: Pillbox #" + String(index+1) + "is OPEN" +"\"}"
-      com->postRequest("{\"message\": \"warning\"}" , "/api/notifications");
+      com->postRequest("{\"message\": \"warning\"}" , "/api/hardware/notifications");
     }
 
    void registerPill(int boxIndex) {
