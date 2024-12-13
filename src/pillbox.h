@@ -79,34 +79,45 @@ class Pillbox {
       JSONVar state = com->getRequest("/api/hardware/change-state");
 
       for (int i = 0; i < 4; ++i) {
+        if (boxState[i] == BOX_OPEN) continue;
         String stateStr = state["state"][i];
+        // Serial.println(stateStr);
 
-        if (stateStr.equals("empty")) continue;
+        if (stateStr.equals("empty")) {
+          Serial.println("BOX is empty");
+          boxState[i] = BOX_EMPTY;
+        }
         else if (stateStr.equals("red")){
+          Serial.println("box is red");
           if (lastBoxState[i] == BOX_EMPTY) {
             if (switches[i]->getSwitchState() == NOMAGNET) openingTimeCount[i] = 1;  // 앱 등록 후, 뚜껑 한번 열고 닫아야 등록됨
-            else if (openingTimeCount[i] == 1) registerPill(i);
+            else if (openingTimeCount[i] >= 1) registerPill(i);
             else continue;
           }
+          
           else isTaken[i] = false;
+          boxState[i] = BOX_CLOSED;
         }
-        else if (stateStr.equals("green")) isTaken[i] = true;
+        else if (stateStr.equals("green")) {
+          Serial.println("box is green");
+          boxState[i] = BOX_CLOSED;
+          isTaken[i] = true;
+        }
         else if (stateStr.equals("complete")) completeMedication(i);
         
       }
-      Serial.println("");
-      
     }
     
     void updateBoxState () {
       Serial.print("BoxState: ");
       for (int i = 0; i < 4; ++i) {
+        if (boxState[i] == BOX_EMPTY) continue;
+
         int registerIndex = i / 2;
         int ledIndex = i % 2;
 
         registers[registerIndex]->setLEDColor(ledIndex, isTaken[i] ? GREEN : RED);
 
-        if (boxState[i] == BOX_EMPTY) continue;
         if (switches[i]->getSwitchState() == NOMAGNET) boxState[i] = BOX_OPEN;
         else boxState[i] = BOX_CLOSED;
         Serial.print(boxState[i]);
