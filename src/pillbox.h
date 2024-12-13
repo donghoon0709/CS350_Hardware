@@ -62,6 +62,10 @@ class Pillbox {
       delete com;
     }
     void initPillbox(void) {
+      registers[0]->setLEDColor(0, OFF);
+      registers[0]->setLEDColor(1, OFF);
+      registers[1]->setLEDColor(0, OFF);
+      registers[1]->setLEDColor(1, OFF);
       com->checkSerialCommunication();
       com->checkWiFiConnection();
       com->checkServerConnection();
@@ -80,7 +84,7 @@ class Pillbox {
         if (stateStr.equals("empty")) continue;
         else if (stateStr.equals("red")){
           if (lastBoxState[i] == BOX_EMPTY) {
-            if (switches[boxIndex]->getSwitchState() == NOMAGNET) openingTimeCount[i] = 1;  // 앱 등록 후, 뚜껑 한번 열고 닫아야 등록됨
+            if (switches[i]->getSwitchState() == NOMAGNET) openingTimeCount[i] = 1;  // 앱 등록 후, 뚜껑 한번 열고 닫아야 등록됨
             else if (openingTimeCount[i] == 1) registerPill(i);
             else continue;
           }
@@ -95,6 +99,7 @@ class Pillbox {
     }
     
     void updateBoxState () {
+      Serial.print("BoxState: ");
       for (int i = 0; i < 4; ++i) {
         int registerIndex = i / 2;
         int ledIndex = i % 2;
@@ -106,10 +111,11 @@ class Pillbox {
         else boxState[i] = BOX_CLOSED;
         Serial.print(boxState[i]);
       }
+      Serial.println("");
     }
 
     void checkBoxStateChanged () {
-      
+      Serial.print("isTaken: ");
       for (int i = 0; i < 4; ++i) {
         if (boxState[i] == BOX_EMPTY) continue;
         if (lastBoxState[i] == BOX_CLOSED) {
@@ -120,10 +126,13 @@ class Pillbox {
           if (boxState[i] == BOX_CLOSED) handleCloseBox(i);
           else handleKeepOpeningBox(i);
         }
+        Serial.print(isTaken[i]);
       }
+      Serial.println("");
     }
 
     void handleOpenBox(int boxIndex) {  // close -> open
+      Serial.println("box opened");
       int registerIndex = boxIndex / 2;
       int ledIndex = boxIndex % 2;
 
@@ -137,6 +146,7 @@ class Pillbox {
     }
 
     void handleCloseBox(int boxIndex){
+      Serial.println("box closed");
       int registerIndex = boxIndex / 2;
       int ledIndex = boxIndex % 2;
 
@@ -173,11 +183,12 @@ class Pillbox {
       for (int i = 0; i < 4; i++) {
         jsonData += openingTimeCount[i] > 50 ? "true" : "false";
         if (i < 3) jsonData += ",";
+        String warningMessage = "{\"message\": \"Warning: Pillbox #" + String(i+1) + "is OPEN" +"\"}";
+        com->postRequest("{\"message\": \"warning\"}" , "/api/hardware/notifications");
       }
       jsonData += "]}";
-
-      String warningMessage = "{\"message\": \"Warning: Pillbox #" + String(index+1) + "is OPEN" +"\"}"
-      com->postRequest("{\"message\": \"warning\"}" , "/api/hardware/notifications");
+      
+      
     }
 
    void registerPill(int boxIndex) {

@@ -15,7 +15,7 @@ char* serverAddress = "172.20.10.9";
 int serverPort = 3000;
 
 
-Pillbox pillbox({3, 4, 5}, {6, 7, 8}, 9, 10, 11, 12, \
+Pillbox pillbox({3, 4, 5}, {6, 7, 8}, 9, 10, 12, 11, \
                 ssid, password, serverAddress, serverPort);
 
 void setup() {
@@ -26,7 +26,6 @@ void loop() {
   pillbox.getStateFromServer();
   pillbox.updateBoxState();
   pillbox.checkBoxStateChanged();
-  // pillbox.sendNewIntakeToServer(1, "green");
 
   delay(1000); // 디바운싱 대기
 }
