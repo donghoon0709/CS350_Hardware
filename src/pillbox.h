@@ -69,6 +69,23 @@ class Pillbox {
       com->checkSerialCommunication();
       com->checkWiFiConnection();
       com->checkServerConnection();
+
+      JSONVar state = com->getRequest("/api/hardware/change-state");
+
+      for (int i = 0; i < 4; ++i) {
+        String stateStr = state["state"][i];
+        if (stateStr.equals("empty")) continue;
+        else if (stateStr.equals("green")) {
+          isTaken[i] = true;
+          boxState[i] = BOX_CLOSED;
+          lastBoxState[i] = BOX_CLOSED;
+        }
+        else if (stateStr.equals("red")) {
+          isTaken[i] = false;
+          boxState[i] = BOX_CLOSED;
+          lastBoxState[i] = BOX_CLOSED;
+        }
+      }
     }
  
     BoxState getBoxState (int idx) {
@@ -79,7 +96,7 @@ class Pillbox {
       JSONVar state = com->getRequest("/api/hardware/change-state");
 
       for (int i = 0; i < 4; ++i) {
-        if (boxState[i] == BOX_OPEN) continue;
+        if (switches[i]->getSwitchState() == NOMAGNET) continue;
         String stateStr = state["state"][i];
         // Serial.println(stateStr);
 
@@ -89,14 +106,18 @@ class Pillbox {
         }
         else if (stateStr.equals("red")){
           Serial.println("box is red");
-          if (lastBoxState[i] == BOX_EMPTY) {
-            if (switches[i]->getSwitchState() == NOMAGNET) openingTimeCount[i] = 1;  // 앱 등록 후, 뚜껑 한번 열고 닫아야 등록됨
-            else if (openingTimeCount[i] >= 1) registerPill(i);
-            else continue;
+          if (lastBoxState[i] == BOX_EMPTY || boxState[i] == BOX_EMPTY) {
+            Serial.println("Lastbox was empty");
+            // if (switches[i]->getSwitchState() == NOMAGNET) openingTimeCount[i] = 1;  // 앱 등록 후, 뚜껑 한번 열고 닫아야 등록됨
+            // if (openingTimeCount[i] >= 1) 
+            registerPill(i);
+            // else continue;
           }
           
-          else isTaken[i] = false;
-          boxState[i] = BOX_CLOSED;
+          else {
+            boxState[i] = BOX_CLOSED;
+            isTaken[i] = false;
+          } 
         }
         else if (stateStr.equals("green")) {
           Serial.println("box is green");
@@ -116,7 +137,7 @@ class Pillbox {
         int registerIndex = i / 2;
         int ledIndex = i % 2;
 
-        registers[registerIndex]->setLEDColor(ledIndex, isTaken[i] ? GREEN : RED);
+        // registers[registerIndex]->setLEDColor(ledIndex, isTaken[i] ? GREEN : RED);
 
         if (switches[i]->getSwitchState() == NOMAGNET) boxState[i] = BOX_OPEN;
         else boxState[i] = BOX_CLOSED;
@@ -140,6 +161,22 @@ class Pillbox {
         Serial.print(isTaken[i]);
       }
       Serial.println("");
+    }
+
+    void changeLED() {
+      for (int i = 0; i < 4; ++i) {
+        if (boxState[i] == BOX_OPEN) continue;
+        int registerIndex = i / 2;
+        int ledIndex = i % 2;
+        if (boxState[i] == BOX_EMPTY) registers[registerIndex]->setLEDColor(ledIndex, OFF);
+        else registers[registerIndex]->setLEDColor(ledIndex, isTaken[i] ? GREEN : RED);
+      }
+    }
+
+    void updateLastBoxState() {
+      for (int i = 0; i < 4; ++i) {
+        lastBoxState[i] = boxState[i];
+      }
     }
 
     void handleOpenBox(int boxIndex) {  // close -> open
@@ -203,6 +240,12 @@ class Pillbox {
     }
 
    void registerPill(int boxIndex) {
+        Serial.println("new pill registered");
+        int registerIndex = boxIndex / 2;
+        int ledIndex = boxIndex % 2;
+
+        registers[registerIndex]->setLEDColor(ledIndex, RED);
+
         boxState[boxIndex] = BOX_CLOSED;
         lastBoxState[boxIndex] = BOX_CLOSED;
         isTaken[boxIndex] = false;
@@ -219,6 +262,10 @@ class Pillbox {
         isTaken[boxIndex] = false;
         openingTimeCount[boxIndex] = 0;
    }
+
+  void printLogs() {
+    
+  }
 };
 
 #endif // PILLBOX_H

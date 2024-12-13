@@ -8,10 +8,10 @@
 #include <ArduinoHttpClient.h>
 #include <Arduino_JSON.h>
 
-char* ssid = "donghoon";          // Wi-Fi 이름
+char* ssid = "zimin";          // Wi-Fi 이름
 char* password = "arduinotest";  // Wi-Fi 비밀번호
 
-char* serverAddress = "172.20.10.9"; 
+char* serverAddress = "172.20.10.5"; 
 int serverPort = 3000;
 
 
@@ -25,7 +25,9 @@ void setup() {
 void loop() {
   pillbox.getStateFromServer();
   pillbox.updateBoxState();
+  pillbox.changeLED();
   pillbox.checkBoxStateChanged();
+  pillbox.updateLastBoxState();
 
   delay(1000); // 디바운싱 대기
 }
