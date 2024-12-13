@@ -96,7 +96,10 @@ class Pillbox {
       JSONVar state = com->getRequest("/api/hardware/change-state");
 
       for (int i = 0; i < 4; ++i) {
-        if (switches[i]->getSwitchState() == NOMAGNET) continue;
+        if (switches[i]->getSwitchState() == NOMAGNET){
+          openingTimeCount[i] = 1;
+          continue;
+        }
         String stateStr = state["state"][i];
         // Serial.println(stateStr);
 
@@ -107,10 +110,12 @@ class Pillbox {
         else if (stateStr.equals("red")){
           Serial.println("box is red");
           if (lastBoxState[i] == BOX_EMPTY || boxState[i] == BOX_EMPTY) {
-            Serial.println("Lastbox was empty");
-            // if (switches[i]->getSwitchState() == NOMAGNET) openingTimeCount[i] = 1;  // 앱 등록 후, 뚜껑 한번 열고 닫아야 등록됨
-            // if (openingTimeCount[i] >= 1) 
-            registerPill(i);
+            Serial.println("box is empty");
+            Serial.print("Opening Count");
+            Serial.println(openingTimeCount[i]);
+            if (switches[i]->getSwitchState() == NOMAGNET) openingTimeCount[i] = 1;  // 앱 등록 후, 뚜껑 한번 열고 닫아야 등록됨
+            if (openingTimeCount[i] >= 1) registerPill(i);
+            // registerPill(i);
             // else continue;
           }
           
@@ -213,7 +218,7 @@ class Pillbox {
 
       openingTimeCount[boxIndex]++;
       if (openingTimeCount[boxIndex] > 5) {
-        registers[registerIndex]->setLEDBlink(ledIndex, YELLOW);
+        registers[registerIndex]->setLEDBlink(ledIndex, GREEN);
 
         sendKeepOpeningStateToServer();
       }
